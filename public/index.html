@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <title>XHR Watch</title>
+    <link rel="stylesheet" href="/_/style.css" />
+  </head>
+  <body>
+    <header class="toolbar">
+      <span class="title">⚡ XHR Watch</span>
+      <input
+        id="filter"
+        type="text"
+        placeholder="filter URL / fn / method..."
+      />
+      <label class="pause"><input type="checkbox" id="pause" /> pause</label>
+      <button id="clear">Clear</button>
+      <span id="count" class="muted">0</span>
+      <span id="status" class="status status-disconnected">disconnected</span>
+    </header>
+    <main>
+      <section class="list">
+        <table id="rows">
+          <thead>
+            <tr>
+              <th>Method</th>
+              <th>URL / fn</th>
+              <th>Status</th>
+              <th>Cost</th>
+              <th>Size</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <div id="empty" class="empty">
+          no events yet · 等 market260813 触发 XHR
+        </div>
+      </section>
+      <aside class="detail">
+        <nav class="tabs">
+          <button data-tab="params" class="active">Params</button>
+          <button data-tab="req">Request</button>
+          <button data-tab="res">Response</button>
+        </nav>
+        <div id="detail-body" class="detail-body">
+          <div class="placeholder">click a row to inspect</div>
+        </div>
+      </aside>
+    </main>
+    <script src="/_/app.js"></script>
+  </body>
+</html>

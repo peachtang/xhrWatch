@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <script>
+      (function () {
+        if (window.__xhrHooked) return;
+        window.__xhrHooked = true;
+        var ENDPOINT = "http://localhost:3001/xhr-events";
+        var MAX_BODY = 50 * 1024; // 50KB，超出截断
+        function truncate(s, n) {
+          if (typeof s !== "string") return s;
+          return s.length > n
+            ? s.slice(0, n) + "...[truncated " + (s.length - n) + " bytes]"
+            : s;
+        }
+        function post(payload) {
+          try {
+            var xhr = new XMLHttpRequest();
+            xhr.open("POST", ENDPOINT);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.send(JSON.stringify(payload));
+          } catch (e) {
+            /* pixui runtime 没有 fetch；任何异常都吞掉，绝不污染业务 XHR */
+          }
+        }
+        var OrigOpen = XMLHttpRequest.prototype.open;
+        var OrigSend = XMLHttpRequest.prototype.send;
+        XMLHttpRequest.prototype.open = function (method, url) {
+          this.__hook = {
+            method: method,
+            url: String(url),
+            startTime: Date.now(),
+          };
+          this.__skipHook = String(url) === ENDPOINT;
+          if (!this.__skipHook) return OrigOpen.apply(this, arguments);
+        };
+        XMLHttpRequest.prototype.send = function (body) {
+          if (this.__skipHook) return OrigSend.apply(this, arguments);
+          this.addEventListener("readystatechange", function () {
+            if (this.readyState !== 4) return;
+            var h = this.__hook || {};
+            var cost = Date.now() - (h.startTime || Date.now());
+            post({
+              method: h.method,
+              url: h.url,
+              status: this.status,
+              cost: cost,
+              reqBody: truncate(
+                typeof body === "string" ? body : body ? "[binary]" : "",
+                MAX_BODY,
+              ),
+              resBody: truncate(this.responseText || "", MAX_BODY),
+              ts: h.startTime,
+            });
+          });
+          return OrigSend.apply(this, arguments);
+        };
+      })();
+    </script>
+  </body>
+</html>
