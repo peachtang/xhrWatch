@@ -124,3 +124,41 @@ pre.json .j-null { color: #858585; }
   white-space: pre-wrap; word-break: break-all;
   color: #d4d4d4; line-height: 1.5;
 }
+
+/* JSON 树：可折叠交互 */
+.json-wrap { position: relative; }
+.json-toolbar {
+  display: flex; gap: 6px; align-items: center; justify-content: flex-end;
+  margin-bottom: 6px;
+}
+.copy-btn {
+  background: #3c3c3c; color: #d4d4d4; border: 1px solid #1a1a1a;
+  padding: 2px 10px; border-radius: 2px; cursor: pointer;
+  font-family: inherit; font-size: 11px; line-height: 1.4;
+}
+.copy-btn:hover { background: #505050; }
+.copy-btn.flash-ok {
+  background: #1e4d2c; color: #4ec9b0; border-color: #4ec9b0;
+}
+.copy-btn.flash-err {
+  background: #4a1d1d; color: #f48771; border-color: #f48771;
+}
+
+.json { font-family: inherit; line-height: 1.5; }
+.j-toggle {
+  display: inline-block; width: 14px; text-align: center;
+  background: none; border: none; color: #858585; cursor: pointer;
+  padding: 0; font-family: inherit; font-size: 11px;
+  user-select: none;
+}
+.j-toggle:hover { color: #d4d4d4; }
+.j-bracket { color: #d4d4d4; }
+.j-meta { color: #858585; font-style: italic; margin: 0 2px; }
+.j-node.collapsed > .j-content { display: none; }
+.json .j-content { padding-left: 4px; }
+.json .j-line { padding-left: 16px; position: relative; }
+.json .j-key { color: #9cdcfe; }
+.json .j-str { color: #ce9178; word-break: break-all; }
+.json .j-num { color: #b5cea8; }
+.json .j-bool { color: #569cd6; }
+.json .j-null { color: #858585; }

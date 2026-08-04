@@ -155,16 +155,24 @@ function renderBody(s, kind) {
   const truncated = s.indexOf('[truncated') !== -1;
   let parsed = null;
   try { parsed = JSON.parse(s); } catch {}
-  let html = '';
-  if (parsed !== null) html = `<pre class="json">${renderJSON(parsed)}</pre>`;
-  else html = `<pre class="body-raw">${esc(s)}</pre>`;
+  // 重置 JSON 节点 id 计数器，避免长生命周期内数值膨胀
+  jsonNodeSeq = 0;
+  const copyData = esc(s);
+  let html = `<div class="json-wrap">`
+           + `<div class="json-toolbar"><button class="copy-btn" type="button" data-copy="${copyData}" aria-label="copy ${kind} body">📋 Copy</button></div>`;
+  if (parsed !== null) html += `<div class="json">${renderJSON(parsed)}</div>`;
+  else html += `<pre class="body-raw">${esc(s)}</pre>`;
+  html += `</div>`;
   if (truncated) html += `<div class="truncated-notice">⚠ body truncated at 50KB</div>`;
   return html;
 }
 
-// JSON 树渲染：depth >= 4 折叠为 {...} / [...]，避免超深嵌套炸屏
-function renderJSON(value, depth) {
-  if (depth == null) depth = 0;
+// JSON 树渲染：可折叠/展开的交互式树
+const MAX_JSON_DEPTH = 8;           // 硬性上限：超过则截断为 {...} / [...]
+const DEFAULT_COLLAPSE_DEPTH = 2;   // >= 此深度的对象/数组默认折叠
+let jsonNodeSeq = 0;                // 自增 id 计数器，每个节点唯一
+
+function renderJSON(value, depth = 0) {
   if (value === null) return '<span class="j-null">null</span>';
   switch (typeof value) {
     case 'string': return `<span class="j-str">"${esc(value)}"</span>`;
@@ -174,14 +182,32 @@ function renderJSON(value, depth) {
   const isArray = Array.isArray(value);
   const open = isArray ? '[' : '{';
   const close = isArray ? ']' : '}';
-  if (depth >= 4) return `<span class="j-null">${open}…${close}</span>`;
   const entries = isArray ? value.map((v, i) => [i, v]) : Object.entries(value);
-  if (entries.length === 0) return open + close;
-  const inner = entries.map(([k, v]) => {
+  // 硬上限：超深截断为占位
+  if (depth >= MAX_JSON_DEPTH) {
+    return `<span class="j-bracket">${open}</span><span class="j-meta">…</span><span class="j-bracket">${close}</span>`;
+  }
+  // 空容器
+  if (entries.length === 0) return `<span class="j-bracket">${open}${close}</span>`;
+  const id = `n${jsonNodeSeq++}`;
+  const collapsed = depth >= DEFAULT_COLLAPSE_DEPTH;
+  const meta = isArray
+    ? `${entries.length} ${entries.length === 1 ? 'item' : 'items'}`
+    : `${entries.length} ${entries.length === 1 ? 'key' : 'keys'}`;
+  const toggle = `<span class="j-toggle" data-target="${id}">${collapsed ? '▶' : '▼'}</span>`;
+  // 始终渲染 j-content（含子节点 + 闭合括号），折叠时由 CSS 隐藏；避免懒渲染导致的首次展开延迟
+  const innerLines = entries.map(([k, v]) => {
     const keyStr = isArray ? '' : `<span class="j-key">"${esc(String(k))}"</span>: `;
-    return `<div style="padding-left:16px">${keyStr}${renderJSON(v, depth + 1)}</div>`;
+    return `<div class="j-line">${keyStr}${renderJSON(v, depth + 1)}</div>`;
   }).join('');
-  return open + inner + close;
+  // header：折叠态包含 meta+close；展开态只有 open
+  // trailer：始终渲染闭合括号（折叠时与 header 中的合并表现为完整 { N keys }）
+  const header = collapsed
+    ? `${toggle}<span class="j-bracket">${open}</span><span class="j-meta"> ${esc(meta)} </span>`
+    : `${toggle}<span class="j-bracket">${open}</span>`;
+  const trailer = `<span class="j-bracket j-close">${close}</span>`;
+  const contentBlock = `<div class="j-content">${innerLines}</div>`;
+  return `<div class="j-node ${isArray ? 'j-arr' : 'j-obj'} ${collapsed ? 'collapsed' : ''}" data-id="${id}">${header}${contentBlock}${trailer}</div>`;
 }
 
 // ============ Wiring ============
@@ -199,6 +225,61 @@ tabsEl.addEventListener('click', (e) => {
     if (ev) renderDetail(ev);
   }
 });
+
+// 详情面板：折叠切换 + 一键复制（事件委托，render 后无需重绑）
+detailBodyEl.addEventListener('click', async (e) => {
+  // (a) 折叠/展开 JSON 节点
+  const toggle = e.target.closest('.j-toggle');
+  if (toggle) {
+    const id = toggle.dataset.target;
+    const node = detailBodyEl.querySelector(`.j-node[data-id="${id}"]`);
+    if (node) {
+      const collapsed = node.classList.toggle('collapsed');
+      toggle.textContent = collapsed ? '▶' : '▼';
+    }
+    return;
+  }
+  // (b) 一键复制
+  const btn = e.target.closest('.copy-btn');
+  if (btn) {
+    const text = btn.dataset.copy ?? '';
+    const ok = await copyText(text);
+    const orig = btn.textContent;
+    btn.textContent = ok ? '✓ Copied' : '✗ Failed';
+    btn.classList.add(ok ? 'flash-ok' : 'flash-err');
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.classList.remove('flash-ok', 'flash-err');
+    }, 1200);
+  }
+});
+
+// 复制到剪贴板：优先 modern API，失败时回退到隐藏 textarea + execCommand
+async function copyText(text) {
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      await navigator.clipboard.writeText(text);
+      return true;
+    }
+  } catch {}
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '0';
+    ta.style.left = '0';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch {
+    return false;
+  }
+}
 
 // ============ Init ============
 connect();
