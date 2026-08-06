@@ -1,3 +1,4 @@
+import { useState } from "react";
 import type { XhrEvent } from "../types";
 import { esc } from "../utils";
 import CopyButton from "./CopyButton";
@@ -9,6 +10,24 @@ const TABS = [
   { key: "res", label: "Response" },
 ] as const;
 
+function copyText(text: string) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    return navigator.clipboard.writeText(text);
+  }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand("copy");
+  } finally {
+    document.body.removeChild(ta);
+  }
+  return Promise.resolve();
+}
+
 type TabKey = (typeof TABS)[number]["key"];
 
 interface EventDetailProps {
@@ -17,7 +36,7 @@ interface EventDetailProps {
   onTabChange: (tab: TabKey) => void;
 }
 
-function renderParams(ev: XhrEvent) {
+function renderParams(ev: XhrEvent, onCopy: (text: string) => void) {
   let params: [string, string][] = [];
   try {
     const u = new URL(ev.url);
@@ -33,11 +52,13 @@ function renderParams(ev: XhrEvent) {
         <tbody>
           <tr>
             <th>请求网址</th>
-            <td>{esc(ev.url)}</td>
+            <td onDoubleClick={() => onCopy(ev.url)} title="双击复制">
+              {esc(ev.url)}
+            </td>
           </tr>
           <tr>
             <th>请求方式</th>
-            <td>
+            <td onDoubleClick={() => onCopy(ev.method)} title="双击复制">
               <span className={`method method-${ev.method}`}>
                 {esc(ev.method)}
               </span>
@@ -45,7 +66,10 @@ function renderParams(ev: XhrEvent) {
           </tr>
           <tr>
             <th>状态码</th>
-            <td>
+            <td
+              onDoubleClick={() => onCopy(String(ev.status))}
+              title="双击复制"
+            >
               <span className={statusClass}>{ev.status}</span>
             </td>
           </tr>
@@ -67,7 +91,9 @@ function renderParams(ev: XhrEvent) {
               {params.map(([k, v]) => (
                 <tr key={k + v}>
                   <th>{esc(k)}</th>
-                  <td>{esc(v)}</td>
+                  <td onDoubleClick={() => onCopy(v)} title="双击复制">
+                    {esc(v)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -111,6 +137,23 @@ export default function EventDetail({
   activeTab,
   onTabChange,
 }: EventDetailProps) {
+  const [notice, setNotice] = useState<string | null>(null);
+  let noticeTimer = 0;
+
+  const handleCopy = (text: string) => {
+    copyText(text)
+      .then(() => {
+        if (noticeTimer) window.clearTimeout(noticeTimer);
+        setNotice(`已复制：${text}`);
+        noticeTimer = window.setTimeout(() => setNotice(null), 2000);
+      })
+      .catch(() => {
+        if (noticeTimer) window.clearTimeout(noticeTimer);
+        setNotice("复制失败");
+        noticeTimer = window.setTimeout(() => setNotice(null), 2000);
+      });
+  };
+
   return (
     <aside className="detail">
       <nav className="tabs">
@@ -126,9 +169,10 @@ export default function EventDetail({
         ))}
       </nav>
       <div id="detail-body" className="detail-body">
+        {notice && <div className="copy-notice">{notice}</div>}
         {ev ? (
           <>
-            {activeTab === "params" && renderParams(ev)}
+            {activeTab === "params" && renderParams(ev, handleCopy)}
             {activeTab === "req" && renderBody(ev.reqBody, "request")}
             {activeTab === "res" && renderBody(ev.resBody, "response")}
           </>
