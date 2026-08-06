@@ -1,11 +1,12 @@
 /**
  * XHR 调试钩子
- * 将所有 XHR 请求/响应上报到本地端点（默认 http://localhost:3001/xhr-events）
+ * 将所有 XHR 请求/响应通过 WebSocket 上报到本地端点（默认 ws://localhost:3001/ws）
  * 通过 window.__xhrHooked 守卫，重复调用安全
  */
 
-const ENDPOINT = "http://localhost:3001/xhr-events";
+const WS_URL = "ws://localhost:3001/ws";
 const MAX_BODY = 50 * 1024; // 50KB，超出截断
+const MAX_QUEUE = 500; // 断线时最多缓冲的事件数，防止内存无限增长
 
 function truncate(s: unknown, n: number): string {
   if (typeof s !== "string") return s as string;
@@ -14,13 +15,49 @@ function truncate(s: unknown, n: number): string {
     : s;
 }
 
-function post(payload: Record<string, unknown>): void {
+// —— WS 上报通道：断线自动重连（指数退避），离线期间事件进入有界队列 ——
+let ws: WebSocket | null = null;
+let wsOpen = false;
+let retryDelay = 1000;
+const queue: Record<string, unknown>[] = [];
+
+function flush(): void {
+  while (wsOpen && queue.length) {
+    ws!.send(JSON.stringify({ type: "ingest", payload: queue.shift() }));
+  }
+}
+
+function connect(): void {
   try {
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", ENDPOINT);
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.send(JSON.stringify(payload));
-  } catch (e) {
+    ws?.close();
+  } catch {}
+  ws = new WebSocket(WS_URL);
+  ws.onopen = () => {
+    wsOpen = true;
+    retryDelay = 1000;
+    flush();
+  };
+  ws.onclose = () => {
+    wsOpen = false;
+    setTimeout(connect, retryDelay);
+    retryDelay = Math.min(retryDelay * 2, 10000);
+  };
+  ws.onerror = () => {
+    try {
+      ws?.close();
+    } catch {}
+  };
+}
+
+function report(payload: Record<string, unknown>): void {
+  try {
+    if (wsOpen) {
+      ws!.send(JSON.stringify({ type: "ingest", payload }));
+    } else {
+      queue.push(payload);
+      if (queue.length > MAX_QUEUE) queue.shift();
+    }
+  } catch {
     // 任何异常都吞掉，绝不污染业务 XHR
   }
 }
@@ -29,6 +66,8 @@ export function installXhrHook(): void {
   const w = window as any;
   if (w.__xhrHooked) return;
   w.__xhrHooked = true;
+
+  connect();
 
   const OrigOpen = XMLHttpRequest.prototype.open;
   const OrigSend = XMLHttpRequest.prototype.send;
@@ -39,18 +78,10 @@ export function installXhrHook(): void {
       url: String(url),
       startTime: Date.now(),
     };
-    // 标记是否是上报自身的接口，防止死循环
-    (this as any).__skipHook = String(url) === ENDPOINT;
-
-    // 无论是否 skipHook，都必须调用原生的 open
     return OrigOpen.apply(this, arguments as any);
   };
 
   XMLHttpRequest.prototype.send = function (body?: any) {
-    if ((this as any).__skipHook) {
-      return OrigSend.apply(this, arguments as any);
-    }
-
     this.addEventListener("readystatechange", function () {
       if (this.readyState !== 4) return;
       const h = (this as any).__hook || {};
@@ -71,7 +102,7 @@ export function installXhrHook(): void {
       } catch (e) {
         responseTextSafe = "[Error reading responseText]";
       }
-      post({
+      report({
         method: h.method,
         url: h.url,
         status: this.status,

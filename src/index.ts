@@ -84,9 +84,12 @@ app.use(async (ctx, next) => {
 
 // 单 http server 同时托管 Koa + WS upgrade
 const clients = new Set<WebSocket>();
+const senders = new WeakSet<WebSocket>(); // 采集端连接：只上报，不回发广播
+
 function broadcast(msg: unknown) {
   const data = JSON.stringify(msg);
   for (const ws of clients) {
+    if (senders.has(ws)) continue; // 避免把事件回发给采集端
     if (ws.readyState === 1 /* OPEN */) ws.send(data);
   }
 }
@@ -95,6 +98,18 @@ const server = createServer(app.callback());
 const wss = new WebSocketServer({ server, path: '/ws' });
 wss.on('connection', (ws) => {
   clients.add(ws);
+  ws.on('message', (raw) => {
+    let msg: { type?: string; payload?: unknown };
+    try {
+      msg = JSON.parse(raw.toString());
+    } catch {
+      return;
+    }
+    if (msg?.type !== 'ingest') return;
+    senders.add(ws);
+    const stored = store.push((msg.payload || {}) as any);
+    broadcast({ type: 'event', payload: stored });
+  });
   ws.on('close', () => clients.delete(ws));
   ws.on('error', () => clients.delete(ws));
 });
@@ -103,8 +118,8 @@ const port = Number(process.env.PORT ?? 3001);
 server.listen(port, () => {
   console.log(`xhr-watch listening on http://localhost:${port}`);
   console.log(`  GET    /              panel UI`);
-  console.log(`  POST   /xhr-events    <- market260813 AOP hook`);
+  console.log(`  POST   /xhr-events    <- HTTP 上报（兼容保留）`);
   console.log(`  GET    /xhr-events    history (last 500)`);
   console.log(`  DELETE /xhr-events    clear all`);
-  console.log(`  WS     ws://localhost:${port}/ws  push`);
+  console.log(`  WS     ws://localhost:${port}/ws  ingest(采集) + push(面板)`);
 });

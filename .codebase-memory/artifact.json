@@ -1,11 +1,11 @@
 {
     "schema_version": 2,
-    "commit": "38d61db6f4be5c734464a92bdb4429ecc9047bef",
-    "indexed_at": "2026-08-06T07:01:56Z",
+    "commit": "ec4ede0567900d418fd4187014bf93e8101acdb3",
+    "indexed_at": "2026-08-06T08:34:42Z",
     "project": "C-Users-gientech-Desktop-xhrWatch",
-    "nodes": 101,
-    "edges": 154,
-    "original_size": 1376256,
-    "compressed_size": 120277,
-    "compression_level": 9
+    "nodes": 141,
+    "edges": 213,
+    "original_size": 2031616,
+    "compressed_size": 165991,
+    "compression_level": 3
 }

@@ -34,12 +34,12 @@ PORT=3001 npm start
 
 ```
 market260813 页面
-  │ 注入 demo/index.html 中的 XHR 钩子脚本
+  │ 注入 hook/index.html 中的 XHR 钩子脚本
   │ 拦截 XMLHttpRequest.open/send，收集 method/url/status/cost/body
   ▼
-POST /xhr-events  ──►  src/index.ts (Koa)  ──►  src/store.ts (环形缓冲区)
+WebSocket /ws {type:'ingest'}  ──►  src/index.ts (Koa)  ──►  src/store.ts (环形缓冲区)
                            │
-                           ├── WebSocket /ws 广播
+                           ├── WebSocket /ws 广播（面板；采集端不回发）
                            │
                            └── 静态资源服务（frontend/dist 中的 React SPA）
                                     │
@@ -54,6 +54,8 @@ POST /xhr-events  ──►  src/index.ts (Koa)  ──►  src/store.ts (环形
 - `src/index.ts`：单一入口。
   - 启动 Koa HTTP 服务并复用同一个 `http.Server` 挂载 `ws` 的 `WebSocketServer`（路径 `/ws`）。
   - 暴露 `/health`、REST 风格的 `/xhr-events`（GET/POST/DELETE）以及 `/ws` 实时通道。
+    - `/ws`：既接收钩子脚本的 `{type:'ingest'}` 上报（存入 store 并广播），也向面板广播 `event/clear` 消息；上报端连接通过 `senders` 集合识别，不回发广播避免回声。
+    - `POST /xhr-events` 保留为 HTTP 兼容入口，与 WS 上报并存。
   - 静态文件：优先匹配 API 路由，然后尝试 `frontend/dist/` 中的文件，找不到时回退到 `index.html`（SPA fallback）。
   - 静态目录通过 `fileURLToPath(new URL('../frontend/dist', import.meta.url))` 解析，因此依赖 `src/index.ts` 相对于仓库根的位置。
   - 请求体 JSON 限制为 `5mb`（`koa-bodyparser`）。
@@ -81,10 +83,11 @@ POST /xhr-events  ──►  src/index.ts (Koa)  ──►  src/store.ts (环形
 - 暂停时新事件仍进入 `events`，但界面不刷新；取消暂停后 `displayEvents` 与 `events` 同步。
 - 过滤只影响列表展示，不影响事件存储或已选中的详情。
 
-## 客户端钩子（`demo/index.html`）
+## 客户端钩子（`hook/`）
 
-- `demo/index.html` 中的脚本用于注入到目标页面（`market260813`）。
-- 它拦截原生 `XMLHttpRequest`，将请求信息以 JSON 形式 `POST` 到 `http://localhost:3001/xhr-events`。
+- `hook/index.html` + `hook/xhrhook.ts` 用于注入到目标页面（`market260813`）。
+- 它拦截原生 `XMLHttpRequest`，将请求信息以 JSON 形式通过 WebSocket 上报到 `ws://localhost:3001/ws`（消息类型 `ingest`）。
+- 断线自动重连（指数退避，1s→10s），离线期间事件进入有界队列（最多 500 条），重连后批量补发。
 - 请求体/响应体超过 50KB 会被截断，并在末尾追加 `[truncated ...]` 标记。
 - 任何异常都会被静默捕获，避免影响业务 XHR。
 
