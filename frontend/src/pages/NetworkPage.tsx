@@ -29,7 +29,7 @@ export default function NetworkPage() {
   return (
     <>
       <header className="toolbar">
-        <span className="title">⚡ XHR Watch</span>
+        <span className="title">⚡XHR Watch</span>
         <input
           id="filter"
           type="text"
