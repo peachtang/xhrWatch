@@ -7,7 +7,7 @@ import { createServer } from 'node:http';
 import { readFileSync, statSync } from 'node:fs';
 import { join, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { store } from './store';
+import { store, consoleStore } from './store';
 
 const PUBLIC = fileURLToPath(new URL('../frontend/dist', import.meta.url));
 
@@ -51,6 +51,16 @@ router.get('/xhr-events', (ctx) => {
 router.delete('/xhr-events', (ctx) => {
   store.clear();
   broadcast({ type: 'clear' });
+  ctx.body = { ok: true };
+});
+
+router.get('/console-logs', (ctx) => {
+  ctx.body = { logs: consoleStore.recent(500) };
+});
+
+router.delete('/console-logs', (ctx) => {
+  consoleStore.clear();
+  broadcast({ type: 'console-clear' });
   ctx.body = { ok: true };
 });
 
@@ -99,16 +109,21 @@ const wss = new WebSocketServer({ server, path: '/ws' });
 wss.on('connection', (ws) => {
   clients.add(ws);
   ws.on('message', (raw) => {
-    let msg: { type?: string; payload?: unknown };
+    let msg: { type?: string; payload?: any };
     try {
       msg = JSON.parse(raw.toString());
     } catch {
       return;
     }
-    if (msg?.type !== 'ingest') return;
-    senders.add(ws);
-    const stored = store.push((msg.payload || {}) as any);
-    broadcast({ type: 'event', payload: stored });
+    if (msg?.type === 'ingest') {
+      senders.add(ws);
+      const stored = store.push((msg.payload || {}) as any);
+      broadcast({ type: 'event', payload: stored });
+    } else if (msg?.type === 'ingest-console') {
+      senders.add(ws);
+      const stored = consoleStore.push((msg.payload || {}) as any);
+      broadcast({ type: 'console', payload: stored });
+    }
   });
   ws.on('close', () => clients.delete(ws));
   ws.on('error', () => clients.delete(ws));
@@ -121,5 +136,7 @@ server.listen(port, () => {
   console.log(`  POST   /xhr-events    <- HTTP 上报（兼容保留）`);
   console.log(`  GET    /xhr-events    history (last 500)`);
   console.log(`  DELETE /xhr-events    clear all`);
+  console.log(`  GET    /console-logs  console history (last 500)`);
+  console.log(`  DELETE /console-logs  clear console`);
   console.log(`  WS     ws://localhost:${port}/ws  ingest(采集) + push(面板)`);
 });

@@ -3,6 +3,7 @@ import { Outlet } from "react-router-dom";
 
 const TABS = [
   { key: "network", label: "Network", path: "/" },
+  { key: "console", label: "Console", path: "/console" },
   { key: "jsonformat", label: "JSON Format", path: "/jsonformat" },
 ] as const;
 

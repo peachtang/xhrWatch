@@ -3,6 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import JsonFormatPage from "./pages/JsonFormatPage";
 import NetworkPage from "./pages/NetworkPage";
+import ConsolePage from "./pages/ConsolePage";
 
 export default function App() {
   const [jsonRaw, setJsonRaw] = useState("");
@@ -11,6 +12,7 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<NetworkPage />} />
+        <Route path="/console" element={<ConsolePage />} />
         <Route
           path="/jsonformat"
           element={<JsonFormatPage raw={jsonRaw} onRawChange={setJsonRaw} />}

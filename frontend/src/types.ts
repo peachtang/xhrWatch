@@ -8,3 +8,11 @@ export interface XhrEvent {
   resBody: string;
   ts: number;
 }
+
+export interface ConsoleLog {
+  id: number;
+  level: 'debug' | 'info' | 'log' | 'warn' | 'error' | string;
+  args: string[];
+  stack: string;
+  ts: number;
+}

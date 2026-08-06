@@ -28,3 +28,31 @@ export const store = {
     buf.length = 0;
   },
 };
+
+// —— console 日志环形缓冲（与 XHR 事件分开存储） ——
+export interface ConsoleLog {
+  id: number;
+  level: string;
+  args: string[];
+  stack: string;
+  ts: number;
+}
+
+const CMAX = 1000;
+const cbuf: ConsoleLog[] = [];
+let cnextId = 1;
+
+export const consoleStore = {
+  push(ev: Omit<ConsoleLog, 'id'>): ConsoleLog {
+    const item: ConsoleLog = { ...ev, id: cnextId++ };
+    cbuf.push(item);
+    if (cbuf.length > CMAX) cbuf.shift();
+    return item;
+  },
+  recent(n = 500): ConsoleLog[] {
+    return cbuf.slice(-n);
+  },
+  clear(): void {
+    cbuf.length = 0;
+  },
+};

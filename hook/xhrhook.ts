@@ -23,7 +23,7 @@ const queue: Record<string, unknown>[] = [];
 
 function flush(): void {
   while (wsOpen && queue.length) {
-    ws!.send(JSON.stringify({ type: "ingest", payload: queue.shift() }));
+    ws!.send(JSON.stringify(queue.shift()));
   }
 }
 
@@ -49,17 +49,25 @@ function connect(): void {
   };
 }
 
-function report(payload: Record<string, unknown>): void {
+function send(msg: Record<string, unknown>): void {
   try {
     if (wsOpen) {
-      ws!.send(JSON.stringify({ type: "ingest", payload }));
+      ws!.send(JSON.stringify(msg));
     } else {
-      queue.push(payload);
+      queue.push(msg);
       if (queue.length > MAX_QUEUE) queue.shift();
     }
   } catch {
     // 任何异常都吞掉，绝不污染业务 XHR
   }
+}
+
+function report(payload: Record<string, unknown>): void {
+  send({ type: "ingest", payload });
+}
+
+function reportConsole(payload: Record<string, unknown>): void {
+  send({ type: "ingest-console", payload });
 }
 
 export function installXhrHook(): void {
@@ -117,4 +125,74 @@ export function installXhrHook(): void {
     });
     return OrigSend.apply(this, arguments as any);
   };
+}
+
+// —— console 日志钩子 ——
+
+const CONSOLE_LEVELS = ["debug", "info", "log", "warn", "error"] as const;
+type ConsoleLevel = (typeof CONSOLE_LEVELS)[number];
+
+const origConsole: Record<ConsoleLevel, (...args: unknown[]) => void> = {
+  debug: console.debug,
+  info: console.info,
+  log: console.log,
+  warn: console.warn,
+  error: console.error,
+};
+
+// 安全序列化：处理 Error、循环引用、函数等 JSON.stringify 搞不定的值
+function safeSerialize(arg: unknown): string {
+  if (arg === null) return "null";
+  if (arg === undefined) return "undefined";
+  if (arg instanceof Error) {
+    return `${arg.name}: ${arg.message}${arg.stack ? "\n" + arg.stack : ""}`;
+  }
+  if (typeof arg === "function") return `[Function ${arg.name || "anonymous"}]`;
+  if (typeof arg === "string") return arg;
+  const seen = new WeakSet<object>();
+  try {
+    const json = JSON.stringify(
+      arg,
+      (_k, v) => {
+        if (v !== null && typeof v === "object") {
+          if (seen.has(v)) return "[Circular]";
+          seen.add(v);
+        }
+        return v;
+      },
+      2,
+    );
+    return json === undefined ? String(arg) : truncate(json, MAX_BODY);
+  } catch {
+    return String(arg);
+  }
+}
+
+// 捕获调用方堆栈：去掉钩子自身的帧，避免噪声
+function captureStack(): string {
+  const e = new Error();
+  return (e.stack || "")
+    .split("\n")
+    .filter(
+      (line) => line && !line.includes("xhrhook") && !line.includes("captureStack"),
+    )
+    .join("\n");
+}
+
+export function installConsoleHook(): void {
+  const w = window as any;
+  if (w.__consoleHooked) return;
+  w.__consoleHooked = true;
+
+  for (const level of CONSOLE_LEVELS) {
+    console[level] = function (...args: unknown[]) {
+      origConsole[level].apply(console, args); // 先正常打印，页面控制台不受影响
+      reportConsole({
+        level,
+        args: args.map(safeSerialize),
+        stack: level === "error" || level === "warn" ? captureStack() : "",
+        ts: Date.now(),
+      });
+    };
+  }
 }
