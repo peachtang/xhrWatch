@@ -540,46 +540,131 @@ button:disabled {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  position: relative;
 }
 .console-list {
   flex: 1;
   overflow: auto;
   list-style: none;
 }
+
+/* 单条日志：左侧边框 + 细微背景色区分级别 */
 .console-line {
-  padding: 4px 12px;
+  padding: 4px 12px 4px 15px;
   border-bottom: 1px solid #2a2a2a;
+  border-left: 3px solid transparent;
 }
 .console-line:hover {
   background: #2a2d2e;
 }
+.level-debug {
+  border-left-color: #858585;
+  background: rgba(133, 133, 133, 0.05);
+}
+.level-info {
+  border-left-color: #569cd6;
+  background: rgba(86, 156, 214, 0.06);
+}
+.level-log {
+  border-left-color: #d4d4d4;
+  background: transparent;
+}
+.level-warn {
+  border-left-color: #dcdcaa;
+  background: rgba(220, 220, 170, 0.07);
+}
+.level-error {
+  border-left-color: #f48771;
+  background: rgba(244, 135, 113, 0.08);
+}
+
 .console-head {
   display: flex;
   gap: 8px;
   align-items: center;
 }
+/* 时间戳弱化：暗灰，把视觉焦点让给正文 */
 .console-time {
-  color: #858585;
+  color: #6a6a6a;
   user-select: none;
+  font-size: 11px;
 }
-.console-level {
+.console-level-badge {
   font-weight: 600;
-  min-width: 40px;
+  font-size: 10px;
+  text-transform: uppercase;
+  line-height: 1.5;
+  padding: 0 6px;
+  border-radius: 2px;
 }
+.level-debug .console-level-badge {
+  color: #858585;
+  background: #3c3c3c;
+}
+.level-info .console-level-badge {
+  color: #9cdcfe;
+  background: #173f5f;
+}
+.level-log .console-level-badge {
+  color: #d4d4d4;
+  background: #3c3c3c;
+}
+.level-warn .console-level-badge {
+  color: #dcdcaa;
+  background: #4a3520;
+}
+.level-error .console-level-badge {
+  color: #f48771;
+  background: #4a1d1d;
+}
+
+/* 悬浮复制按钮 */
+.console-copy {
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.1s;
+}
+.console-line:hover .console-copy {
+  opacity: 1;
+}
+.console-copy-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #858585;
+  font-size: 13px;
+  padding: 0 4px;
+  font-family: inherit;
+}
+.console-copy-btn:hover {
+  color: #d4d4d4;
+}
+.console-copy-btn.ok {
+  color: #4ec9b0;
+}
+.console-copy-btn.err {
+  color: #f48771;
+}
+
 .console-args {
   padding-top: 2px;
   display: flex;
   flex-direction: column;
   gap: 2px;
 }
+/* 长文本折叠：默认最多显示 5 行 */
+.console-args.clamped {
+  max-height: 7.6em;
+  overflow: hidden;
+}
 .console-arg {
   white-space: pre-wrap;
   word-break: break-word;
   font-family: inherit;
   font-size: inherit;
-  color: inherit;
-  background: none;
-  border: none;
+  line-height: 1.5;
+  color: #d4d4d4;
+  margin: 0;
 }
 .console-stack {
   white-space: pre-wrap;
@@ -588,21 +673,98 @@ button:disabled {
   font-size: 11px;
   margin-top: 4px;
 }
-/* level colors */
-.console-debug .console-level {
+
+/* 语法高亮（复用 JSON 调色板） */
+.console-arg .j-key {
+  color: #9cdcfe;
+}
+.console-arg .j-str {
+  color: #ce9178;
+}
+.console-arg .j-num {
+  color: #b5cea8;
+}
+.console-arg .j-bool {
+  color: #569cd6;
+}
+.console-arg .j-null {
   color: #858585;
 }
-.console-info .console-level {
-  color: #4ec9b0;
+
+.console-expand {
+  margin-top: 4px;
+  background: none;
+  border: none;
+  color: #569cd6;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  font-size: 11px;
 }
-.console-log .console-level {
+.console-expand:hover {
+  text-decoration: underline;
+}
+
+/* Console 工具栏 */
+.console-toolbar .console-search {
+  max-width: 240px;
+}
+.console-regex {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #9cdcfe;
+  font-size: 11px;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.console-regex input {
+  margin: 0;
+}
+.console-levels {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.console-level-chip {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  background: #3c3c3c;
+  border: 1px solid #1a1a1a;
+  border-radius: 2px;
+  color: #d4d4d4;
+  padding: 2px 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 11px;
+}
+.console-level-chip:hover {
+  background: #505050;
+}
+.console-level-chip.off {
+  opacity: 0.35;
+  text-decoration: line-through;
+}
+.console-level-chip .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.console-level-chip.level-debug {
+  color: #858585;
+}
+.console-level-chip.level-info {
+  color: #9cdcfe;
+}
+.console-level-chip.level-log {
   color: #d4d4d4;
 }
-.console-warn .console-level,
-.console-warn .console-arg {
+.console-level-chip.level-warn {
   color: #dcdcaa;
 }
-.console-error .console-level,
-.console-error .console-arg {
+.console-level-chip.level-error {
   color: #f48771;
 }
