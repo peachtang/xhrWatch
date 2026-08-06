@@ -1,6 +1,7 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace; font-size: 12px; }
 body { background: #1e1e1e; color: #d4d4d4; display: flex; flex-direction: column; overflow: hidden; }
+#root { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 
 /* toolbar */
 .toolbar {
@@ -21,6 +22,7 @@ body { background: #1e1e1e; color: #d4d4d4; display: flex; flex-direction: colum
 }
 .toolbar button:hover { background: #505050; }
 .toolbar .pause { color: #9cdcfe; cursor: pointer; user-select: none; }
+.toolbar .pause input { margin-right: 4px; }
 .muted { color: #858585; }
 .status { padding: 2px 8px; border-radius: 2px; font-size: 11px; }
 .status-connected { background: #1e4d2c; color: #4ec9b0; }
@@ -104,15 +106,15 @@ table th:nth-child(5), table td:nth-child(5) { width: 80px; }
 .params-table td { color: #ce9178; word-break: break-all; white-space: pre-wrap; }
 
 /* json / body */
-pre.json {
+.json {
   white-space: pre-wrap; word-break: break-word;
   font-family: inherit; line-height: 1.5;
 }
-pre.json .j-key { color: #9cdcfe; }
-pre.json .j-str { color: #ce9178; word-break: break-all; }
-pre.json .j-num { color: #b5cea8; }
-pre.json .j-bool { color: #569cd6; }
-pre.json .j-null { color: #858585; }
+.json .j-key { color: #9cdcfe; }
+.json .j-str { color: #ce9178; word-break: break-all; }
+.json .j-num { color: #b5cea8; }
+.json .j-bool { color: #569cd6; }
+.json .j-null { color: #858585; }
 
 .truncated-notice {
   margin-top: 8px; padding: 6px 10px;
@@ -125,7 +127,7 @@ pre.json .j-null { color: #858585; }
   color: #d4d4d4; line-height: 1.5;
 }
 
-/* JSON 树：可折叠交互 */
+/* JSON tree */
 .json-wrap { position: relative; }
 .json-toolbar {
   display: flex; gap: 6px; align-items: center; justify-content: flex-end;
@@ -144,7 +146,6 @@ pre.json .j-null { color: #858585; }
   background: #4a1d1d; color: #f48771; border-color: #f48771;
 }
 
-.json { font-family: inherit; line-height: 1.5; }
 .j-toggle {
   display: inline-block; width: 14px; text-align: center;
   background: none; border: none; color: #858585; cursor: pointer;

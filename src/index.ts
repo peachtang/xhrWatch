@@ -9,7 +9,7 @@ import { join, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { store } from './store';
 
-const PUBLIC = fileURLToPath(new URL('../public', import.meta.url));
+const PUBLIC = fileURLToPath(new URL('../frontend/dist', import.meta.url));
 
 const MIME: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -32,26 +32,7 @@ app.use(async (ctx, next) => {
 });
 app.use(bodyParser({ jsonLimit: '5mb' }));
 
-// 静态文件：/ -> public/index.html；/_/xxx -> public/xxx
-app.use(async (ctx, next) => {
-  if (ctx.method !== 'GET') return next();
-  let rel: string;
-  if (ctx.path === '/' || ctx.path === '') rel = '/index.html';
-  else if (ctx.path.startsWith('/_/')) rel = '/' + ctx.path.slice(3);
-  else return next();
-
-  const full = join(PUBLIC, rel);
-  try {
-    statSync(full);
-  } catch {
-    ctx.status = 404;
-    return;
-  }
-  const data = readFileSync(full);
-  ctx.type = MIME[extname(full)] || 'application/octet-stream';
-  ctx.body = data;
-});
-
+// 路由：API 优先
 router.get('/health', (ctx) => {
   ctx.body = { ok: true, ts: Date.now() };
 });
@@ -74,6 +55,32 @@ router.delete('/xhr-events', (ctx) => {
 });
 
 app.use(router.routes()).use(router.allowedMethods());
+
+// 静态文件：打包后的 React SPA
+app.use(async (ctx, next) => {
+  if (ctx.method !== 'GET') return next();
+
+  let rel = ctx.path;
+  if (rel === '/' || rel === '') rel = '/index.html';
+
+  let full = join(PUBLIC, rel);
+  try {
+    statSync(full);
+  } catch {
+    // 文件不存在时回退到 index.html，支持 SPA 路由
+    full = join(PUBLIC, '/index.html');
+    try {
+      statSync(full);
+    } catch {
+      ctx.status = 404;
+      return;
+    }
+  }
+
+  const data = readFileSync(full);
+  ctx.type = MIME[extname(full)] || 'application/octet-stream';
+  ctx.body = data;
+});
 
 // 单 http server 同时托管 Koa + WS upgrade
 const clients = new Set<WebSocket>();
