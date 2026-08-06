@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
-import { useXhrEvents } from './useXhrEvents';
-import EventDetail from './components/EventDetail';
-import EventList from './components/EventList';
+import { useMemo, useState } from "react";
+import { useXhrEvents } from "./useXhrEvents";
+import EventDetail from "./components/EventDetail";
+import EventList from "./components/EventList";
 
-type TabKey = 'params' | 'req' | 'res';
+type TabKey = "params" | "req" | "res";
 
 export default function App() {
   const {
@@ -19,11 +19,11 @@ export default function App() {
     clear,
   } = useXhrEvents();
 
-  const [activeTab, setActiveTab] = useState<TabKey>('params');
+  const [activeTab, setActiveTab] = useState<TabKey>("params");
 
   const selectedEvent = useMemo(
     () => events.find((e) => e.id === selectedId) || null,
-    [events, selectedId]
+    [events, selectedId],
   );
 
   return (
@@ -38,7 +38,12 @@ export default function App() {
           onChange={(e) => setFilterText(e.target.value)}
         />
         <label className="pause">
-          <input type="checkbox" checked={paused} onChange={(e) => setPaused(e.target.checked)} /> pause
+          <input
+            type="checkbox"
+            checked={paused}
+            onChange={(e) => setPaused(e.target.checked)}
+          />{" "}
+          pause
         </label>
         <button id="clear" onClick={clear}>
           Clear
@@ -56,7 +61,11 @@ export default function App() {
           selectedId={selectedId}
           onSelect={setSelectedId}
         />
-        <EventDetail ev={selectedEvent} activeTab={activeTab} onTabChange={setActiveTab} />
+        <EventDetail
+          ev={selectedEvent}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+        />
       </main>
     </>
   );
