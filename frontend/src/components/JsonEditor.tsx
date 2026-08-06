@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef } from "react";
 import {
   createJSONEditor,
   Mode,
@@ -8,33 +8,33 @@ import {
   isMenuButton,
   isMenuDropDownButton,
   isMenuSeparator,
-} from 'vanilla-jsoneditor';
-import 'vanilla-jsoneditor/themes/jse-theme-dark.css';
+} from "vanilla-jsoneditor";
+import "vanilla-jsoneditor/themes/jse-theme-dark.css";
 
 interface JsonEditorProps {
   value: unknown;
 }
 
 const KEEP_MENU = new Set([
-  'Copy',
-  'Copy value',
-  'Copy path',
-  'Copy row',
-  'Collapse',
-  'Expand',
-  'Expand all',
-  'Collapse all',
+  "Copy",
+  "Copy value",
+  "Copy path",
+  "Copy row",
+  "Collapse",
+  "Expand",
+  "Expand all",
+  "Collapse all",
 ]);
 
 function keepMenuItem(item: ContextMenuItem): boolean {
   if (isMenuSeparator(item)) return true;
-  if (isMenuButton(item)) return KEEP_MENU.has(item.text ?? '');
-  if (isMenuDropDownButton(item)) return KEEP_MENU.has(item.main.text ?? '');
+  if (isMenuButton(item)) return KEEP_MENU.has(item.text ?? "");
+  if (isMenuDropDownButton(item)) return KEEP_MENU.has(item.main.text ?? "");
   if (isContextMenuRow(item)) {
     return item.items.some((sub) => {
       if (isMenuSeparator(sub)) return false;
-      if (isMenuButton(sub)) return KEEP_MENU.has(sub.text ?? '');
-      if (isMenuDropDownButton(sub)) return KEEP_MENU.has(sub.main.text ?? '');
+      if (isMenuButton(sub)) return KEEP_MENU.has(sub.text ?? "");
+      if (isMenuDropDownButton(sub)) return KEEP_MENU.has(sub.main.text ?? "");
       return false;
     });
   }
