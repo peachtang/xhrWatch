@@ -1,7 +1,7 @@
 import type { XhrEvent } from '../types';
 import { esc } from '../utils';
 import CopyButton from './CopyButton';
-import JsonTree from './JsonTree';
+import JsonEditor from './JsonEditor';
 
 const TABS = [
   { key: 'params', label: 'Params' },
@@ -58,7 +58,7 @@ function renderBody(body: string | null | undefined, kind: string) {
       <div className="json-toolbar">
         <CopyButton text={body} label={`copy ${kind} body`} />
       </div>
-      {parsed !== null ? <JsonTree value={parsed} /> : <pre className="body-raw">{esc(body)}</pre>}
+      {parsed !== null ? <JsonEditor value={parsed} /> : <pre className="body-raw">{esc(body)}</pre>}
       {truncated && (
         <div className="truncated-notice">⚠ body truncated at 50KB</div>
       )}
