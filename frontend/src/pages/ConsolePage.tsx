@@ -3,8 +3,8 @@ import { useConsoleLogs } from '../useConsoleLogs';
 import { copyText } from '../utils';
 import type { ConsoleLog } from '../types';
 
-const LEVELS = ['debug', 'info', 'log', 'warn', 'error'] as const;
-type Level = (typeof LEVELS)[number];
+export const LEVELS = ['debug', 'info', 'log', 'warn', 'error'] as const;
+export type Level = (typeof LEVELS)[number];
 
 function levelClass(level: string): string {
   return LEVELS.includes(level as Level) ? `level-${level}` : 'level-log';
@@ -56,11 +56,24 @@ function highlight(text: string): string {
   return out;
 }
 
-export default function ConsolePage() {
+interface ConsolePageProps {
+  filterText: string;
+  onFilterTextChange: (value: string) => void;
+  useRegex: boolean;
+  onUseRegexChange: (value: boolean) => void;
+  offLevels: Set<Level>;
+  onOffLevelsChange: (value: Set<Level>) => void;
+}
+
+export default function ConsolePage({
+  filterText,
+  onFilterTextChange,
+  useRegex,
+  onUseRegexChange,
+  offLevels,
+  onOffLevelsChange,
+}: ConsolePageProps) {
   const { logs, status, clear } = useConsoleLogs();
-  const [filterText, setFilterText] = useState('');
-  const [useRegex, setUseRegex] = useState(false);
-  const [offLevels, setOffLevels] = useState<Set<Level>>(new Set());
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
 
   const visibleLogs = useMemo(() => {
@@ -81,13 +94,11 @@ export default function ConsolePage() {
   }, [logs, offLevels, filterText, useRegex]);
 
   const toggleLevel = useCallback((lv: Level) => {
-    setOffLevels((prev) => {
-      const next = new Set(prev);
-      if (next.has(lv)) next.delete(lv);
-      else next.add(lv);
-      return next;
-    });
-  }, []);
+    const next = new Set(offLevels);
+    if (next.has(lv)) next.delete(lv);
+    else next.add(lv);
+    onOffLevelsChange(next);
+  }, [offLevels, onOffLevelsChange]);
 
   const toggleExpanded = useCallback((id: number) => {
     setExpanded((prev) => {
@@ -107,13 +118,13 @@ export default function ConsolePage() {
           type="text"
           placeholder="filter text or /regex/"
           value={filterText}
-          onChange={(e) => setFilterText(e.target.value)}
+          onChange={(e) => onFilterTextChange(e.target.value)}
         />
         <label className="console-regex">
           <input
             type="checkbox"
             checked={useRegex}
-            onChange={(e) => setUseRegex(e.target.checked)}
+            onChange={(e) => onUseRegexChange(e.target.checked)}
           />{' '}
           regex
         </label>
