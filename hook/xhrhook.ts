@@ -1,10 +1,10 @@
 /**
  * XHR 调试钩子
- * 将所有 XHR 请求/响应通过 WebSocket 上报到本地端点（默认 ws://localhost:3001/ws）
+ * 将所有 XHR 请求/响应通过 WebSocket 上报到本地端点（默认 ws://localhost:28801/ws）
  * 通过 window.__xhrHooked 守卫，重复调用安全
  */
 
-const WS_URL = 'ws://localhost:3001/ws';
+const WS_URL = 'ws://localhost:28801/ws';
 const MAX_BODY = 50 * 1024; // 50KB，超出截断
 const MAX_QUEUE = 500; // 断线时最多缓冲的事件数，防止内存无限增长
 
