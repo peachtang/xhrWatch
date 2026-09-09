@@ -95,7 +95,7 @@ export function installXhrHook(): void {
 
       // 安全地获取 responseText
       // 标准浏览器: responseType 默认 ''，responseText 可读
-      // PixUI: responseType 默认 'default'（非标准值），但 responseText 依然可读
+      // 某些 webview 环境: responseType 默认 'default'（非标准值），但 responseText 依然可读
       let responseTextSafe = '';
       try {
         // 绕过 XMLHttpRequestResponseType 联合类型（不含 'default'）

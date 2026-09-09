@@ -2,7 +2,7 @@
   "name": "xhr-watch",
   "version": "0.1.0",
   "private": true,
-  "description": "Local dev backend that collects XHR events from market260813 AOP hook",
+  "description": "Local XHR/console debug panel: injected hook captures requests & console logs, Koa WS backend + React panel",
   "scripts": {
     "dev": "concurrently \"vite\" \"tsx watch src/index.ts\"",
     "start": "tsx src/index.ts",

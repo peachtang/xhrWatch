@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目定位
 
-`xhr-watch` 是一个本地开发工具，用于接收并展示 `market260813` 的 XHR AOP 钩子所捕获的 Ajax 请求，以及注入脚本捕获的 `console.*` 日志。它由 Koa HTTP + WebSocket 后端和一个 React + TypeScript 前端组成。
+`xhr-watch` 是一个本地开发工具，用于接收并展示目标页面中注入的 XHR AOP 钩子所捕获的 Ajax 请求，以及注入脚本捕获的 `console.*` 日志。它由 Koa HTTP + WebSocket 后端和一个 React + TypeScript 前端组成。
 
 ## 常用命令
 
@@ -33,7 +33,7 @@ PORT=3001 npm start
 ## 架构与数据流
 
 ```
-market260813 页面
+目标页面（游戏引擎 webview 或浏览器）
   │ 注入 hook/index.html 中的 XHR + console 钩子脚本
   │ 拦截 XMLHttpRequest.open/send 收集 method/url/status/cost/body
   │ 包装 console.debug/info/log/warn/error 收集日志
@@ -87,7 +87,7 @@ WebSocket /ws {type:'ingest'|'ingest-console'}  ──►  src/index.ts (Koa)  �
 
 ## 客户端钩子（`hook/`）
 
-- `hook/index.html` + `hook/xhrhook.ts` 用于注入到目标页面（`market260813`）。
+- `hook/index.html` + `hook/xhrhook.ts` 用于注入到任意目标页面。
 - 导出两个函数：
   - `installXhrHook()`：拦截原生 `XMLHttpRequest`，通过 WebSocket 上报（消息类型 `ingest`）。
   - `installConsoleHook()`：包装 `console.debug/info/log/warn/error`，上报日志（消息类型 `ingest-console`），error/warn 附带调用方堆栈。

@@ -1,6 +1,6 @@
 # xhrWatch
 
-Local XHR / console debugging panel for PixUI H5 activities running inside a game-engine webview (no DevTools, no F5, unreliable Network/console panels).
+Local XHR / console debugging panel for H5 pages running inside game-engine webviews (no DevTools, no F5, unreliable Network/console panels).
 
 A hook script injected into the target page intercepts `XMLHttpRequest` and wraps `console.*`, then reports everything over WebSocket to a local Koa backend, which serves a React panel for live inspection.
 

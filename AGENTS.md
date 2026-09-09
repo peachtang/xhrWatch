@@ -4,7 +4,7 @@ Guidance for AI coding agents working in this repository. The repo contains **no
 
 ## What this is
 
-Local debugging tool for PixUI H5 activities in game-engine webviews (no DevTools/F5; built-in Network/console unreliable):
+Local debugging tool for H5 activities running inside game-engine webviews (no DevTools/F5; built-in Network/console unreliable):
 
 - `hook/xhrhook.ts` — injected into the target page; intercepts `XMLHttpRequest` and wraps `console.*`, reports over WS
 - `src/index.ts` — Koa backend: WS ingest + REST history + static panel serving
