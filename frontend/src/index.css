@@ -167,10 +167,103 @@ body::after {
 }
 
 /* main split */
-main {
+main.split {
   flex: 1;
   display: flex;
   min-height: 0;
+  overflow: hidden;
+}
+
+/* DevTools 式顶部栏 */
+.devtools-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px;
+  height: 32px;
+  background: #0b1020;
+  border-bottom: 1px solid #1f2a4a;
+  flex-shrink: 0;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #ff2a88;
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(255, 42, 136, 0.35);
+  padding-right: 10px;
+  border-right: 1px solid #1f2a4a;
+  align-self: stretch;
+}
+.brand-name {
+  font-size: 12px;
+}
+
+/* 页面根：顶部栏之下垂直布局 */
+.page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* 面板级工具栏（DevTools 每个面板内的小工具条） */
+.panel-toolbar {
+  flex-shrink: 0;
+}
+
+/* 可拖拽分隔条 */
+.divider {
+  width: 4px;
+  cursor: col-resize;
+  flex-shrink: 0;
+  background: transparent;
+  position: relative;
+  z-index: 2;
+}
+.divider:hover,
+.divider.active {
+  background: rgba(0, 229, 255, 0.35);
+}
+
+/* 详情面板容器（宽度由 JS 拖动控制） */
+.detail-pane {
+  display: flex;
+  flex-direction: column;
+  min-width: 280px;
+  max-width: 85%;
+  flex-shrink: 0;
+  min-height: 0;
+}
+
+/* 底部状态栏（DevTools summary bar 风格） */
+.statusbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  height: 22px;
+  padding: 0 12px;
+  background: #0b1020;
+  border-top: 1px solid #1f2a4a;
+  font-size: 11px;
+  color: #6b7aa3;
+  flex-shrink: 0;
+  user-select: none;
+}
+.sb-count {
+  color: #6b7aa3;
+}
+.sb-spacer {
+  flex: 1;
+}
+.statusbar .status {
+  padding: 1px 6px;
+  border: none;
+  background: none;
+}
+.statusbar .status::before {
+  display: none;
 }
 
 /* list */
@@ -285,12 +378,13 @@ tbody tr.selected td {
 }
 
 /* detail pane */
-.detail {
-  width: 50%;
+.detail-pane .detail {
+  width: 100%;
+  flex: 1;
+  min-height: 0;
   border-left: 1px solid rgba(0, 229, 255, 0.18);
   display: flex;
   flex-direction: column;
-  min-height: 0;
   background: #05080f;
 }
 .tabs {
@@ -899,3 +993,104 @@ button:disabled {
   color: #ff3860;
 }
 
+
+/* Guide page */
+.guide-page {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  min-height: 0;
+}
+.guide-content {
+  max-width: 860px;
+  width: 100%;
+  padding: 24px 32px 48px;
+  line-height: 1.6;
+}
+.guide-title {
+  color: #00e5ff;
+  font-size: 20px;
+  text-shadow: 0 0 10px rgba(0, 229, 255, 0.3);
+  margin-bottom: 6px;
+}
+.guide-sub {
+  color: #6b7aa3;
+  margin-bottom: 20px;
+}
+.guide-downloads {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 28px;
+}
+.guide-download {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 16px;
+  background: #0b1020;
+  border: 1px solid #1f2a4a;
+  text-decoration: none;
+  color: #c8d6f0;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.guide-download:hover {
+  border-color: #00e5ff;
+  box-shadow: 0 0 10px rgba(0, 229, 255, 0.2);
+}
+.gd-name {
+  color: #ff2a88;
+  font-weight: 600;
+  font-size: 14px;
+}
+.gd-desc {
+  color: #6b7aa3;
+  font-size: 12px;
+}
+.guide-steps h2,
+.guide-tips h2 {
+  color: #c8d6f0;
+  font-size: 15px;
+  border-bottom: 1px solid #1f2a4a;
+  padding-bottom: 6px;
+  margin-bottom: 14px;
+}
+.guide-step {
+  margin-bottom: 16px;
+}
+.guide-step h3 {
+  color: #ffe14d;
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.guide-step p {
+  color: #c8d6f0;
+  font-size: 12px;
+}
+.guide-step code,
+.guide-tips code {
+  background: #131a2e;
+  border: 1px solid #1f2a4a;
+  padding: 0 4px;
+  color: #00e5ff;
+  font-family: inherit;
+}
+.guide-step pre {
+  background: #05080f;
+  border: 1px solid #1f2a4a;
+  padding: 10px 12px;
+  margin: 8px 0;
+  overflow: auto;
+  color: #00ff9f;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.guide-tips p {
+  color: #c8d6f0;
+  font-size: 12px;
+}
+.guide-tips {
+  margin-top: 24px;
+}

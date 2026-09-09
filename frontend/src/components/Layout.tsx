@@ -5,6 +5,7 @@ const TABS = [
   { key: "network", label: "Network", path: "/" },
   { key: "console", label: "Console", path: "/console" },
   { key: "jsonformat", label: "JSON Format", path: "/jsonformat" },
+  { key: "guide", label: "Guide", path: "/guide" },
 ] as const;
 
 export default function Layout() {
@@ -12,7 +13,11 @@ export default function Layout() {
 
   return (
     <>
-      <div className="toolbar">
+      <div className="devtools-bar">
+        <div className="brand">
+          <img src="/favicon.svg" alt="" width={14} height={14} />
+          <span className="brand-name">XHR Watch</span>
+        </div>
         <nav className="nav-tabs">
           {TABS.map((tab) => {
             const active =
@@ -30,7 +35,6 @@ export default function Layout() {
             );
           })}
         </nav>
-        <span className="muted">{location.pathname}</span>
       </div>
       <Outlet />
     </>

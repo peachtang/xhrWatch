@@ -64,6 +64,14 @@ router.delete('/console-logs', (ctx) => {
   ctx.body = { ok: true };
 });
 
+// hook 源码下载（保持与仓库 hook/xhrhook.ts 同步，永不过期）
+router.get('/download/hook', (ctx) => {
+  const hookPath = fileURLToPath(new URL('../hook/xhrhook.ts', import.meta.url));
+  ctx.set('Content-Type', 'text/plain; charset=utf-8');
+  ctx.set('Content-Disposition', 'attachment; filename="xhrhook.ts"');
+  ctx.body = readFileSync(hookPath, 'utf-8');
+});
+
 app.use(router.routes()).use(router.allowedMethods());
 
 // 静态文件：打包后的 React SPA

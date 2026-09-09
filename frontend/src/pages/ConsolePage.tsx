@@ -110,9 +110,8 @@ export default function ConsolePage({
   }, []);
 
   return (
-    <>
+    <div className="page">
       <header className="toolbar console-toolbar">
-        <span className="title">Console</span>
         <input
           className="console-search"
           type="text"
@@ -145,12 +144,6 @@ export default function ConsolePage({
         <button id="clear" onClick={clear}>
           Clear
         </button>
-        <span id="count" className="muted">
-          {visibleLogs.length}/{logs.length}
-        </span>
-        <span id="status" className={`status status-${status}`}>
-          {status}
-        </span>
       </header>
       <main className="console-main">
         {visibleLogs.length === 0 ? (
@@ -170,7 +163,16 @@ export default function ConsolePage({
           </ul>
         )}
       </main>
-    </>
+      <footer className="statusbar">
+        <span className="sb-count">
+          {visibleLogs.length}/{logs.length} logs
+        </span>
+        <span className="sb-spacer" />
+        <span id="status" className={`status status-${status}`}>
+          {status === 'connected' ? '● connected' : '○ disconnected'}
+        </span>
+      </footer>
+    </div>
   );
 }
 

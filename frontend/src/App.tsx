@@ -4,6 +4,7 @@ import Layout from "./components/Layout";
 import JsonFormatPage from "./pages/JsonFormatPage";
 import NetworkPage from "./pages/NetworkPage";
 import ConsolePage, { type Level } from "./pages/ConsolePage";
+import GuidePage from "./pages/GuidePage";
 
 export default function App() {
   const [jsonRaw, setJsonRaw] = useState("");
@@ -32,6 +33,7 @@ export default function App() {
           path="/jsonformat"
           element={<JsonFormatPage raw={jsonRaw} onRawChange={setJsonRaw} />}
         />
+        <Route path="/guide" element={<GuidePage />} />
       </Route>
     </Routes>
   );
