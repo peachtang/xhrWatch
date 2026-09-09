@@ -59,7 +59,7 @@ target page ──WS {type:'ingest'|'ingest-console'}──► src/index.ts (Koa
 - Don't add a catch-all static middleware before API routes in `src/index.ts` — it breaks `/xhr-events` etc.
 - Bodies > 50KB truncated with `[truncated ...]` marker — by design, not a bug
 - `vanilla-jsoneditor` dep removed; JSON display uses `frontend/src/components/JsonTree.tsx`
-- No `market260813`-specific hardcoding in new code — hooks must stay generic (URL from config/params when possible)
+- No activity-specific hardcoding in new code — hooks must stay generic (URL from config/params when possible)
 
 ## Context files
 

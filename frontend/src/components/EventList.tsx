@@ -79,7 +79,7 @@ export default function EventList({ events, selectedId, onSelect }: EventListPro
       </table>
       {events.length === 0 && (
         <div id="empty" className="empty">
-          no events yet · 等 market260813 触发 XHR
+          no events yet · 等页面发起 XHR 后自动捕获
         </div>
       )}
       {menu && (
