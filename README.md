@@ -1,48 +1,48 @@
 # xhrWatch
 
-Local XHR / console debugging panel for H5 pages running inside game-engine webviews (no DevTools, no F5, unreliable Network/console panels).
+游戏引擎 webview 内 H5 页面的本地 XHR / console 调试面板（无 DevTools、无 F5、内置 Network/console 面板不可靠）。
 
-A hook script injected into the target page intercepts `XMLHttpRequest` and wraps `console.*`, then reports everything over WebSocket to a local Koa backend, which serves a React panel for live inspection.
+将 hook 脚本注入目标页面：拦截 `XMLHttpRequest` 并包装 `console.*`，通过 WebSocket 上报到本地 Koa 后端，再由 React 面板实时展示。
 
-## Architecture
+## 架构
 
 ```
-Target page (game-engine webview)
+目标页面（游戏引擎 webview）
   └─ hook/xhrhook.ts   installXhrHook / installConsoleHook
-       intercept XMLHttpRequest.open/send + wrap console.*
+       拦截 XMLHttpRequest.open/send + 包装 console.*
        └─ WS ws://localhost:3001/ws  {type:'ingest'|'ingest-console'}
-              ├─ Koa backend (src/index.ts) → in-memory ring buffers
-              ├─ WS broadcast to panel
-              └─ static frontend/dist (React SPA, Vite)
+              ├─ Koa 后端 (src/index.ts) → 内存环形缓冲
+              ├─ WS 广播到面板
+              └─ 静态资源 frontend/dist (React SPA, Vite)
 ```
 
-## Quick start
+## 快速开始
 
 ```bash
 npm install
 
-# Dev: Vite dev server (5173) + tsx watch Koa backend (3001)
+# 开发：Vite dev server (5173) + tsx watch Koa 后端 (3001)
 npm run dev
 
-# Prod: build frontend, then Koa serves frontend/dist
-npm start        # or PORT=3001 npm start
+# 生产：先构建前端，Koa 再托管 frontend/dist
+npm start        # 或 PORT=3001 npm start
 
-# Type check (backend + frontend)
+# 类型检查（后端 + 前端）
 npm run check
 ```
 
-Health check:
+健康检查：
 
 ```bash
 curl http://localhost:3001/health   # 200
-curl http://localhost:5173/         # 200 (dev panel)
+curl http://localhost:5173/         # 200（dev 面板）
 ```
 
-Panel: http://localhost:5173/ (dev) or http://localhost:3001/ (prod)
+面板地址：http://localhost:5173/（开发）或 http://localhost:3001/（生产）
 
-## Injecting the hook
+## 注入 hook
 
-Drop `hook/xhrhook.ts` into the target project (each activity keeps its own copy), then:
+把 `hook/xhrhook.ts` 放进目标项目（各活动各自保留一份副本），然后：
 
 ```ts
 import { installXhrHook, installConsoleHook } from '<path>/xhrhook';
@@ -50,39 +50,43 @@ installXhrHook();
 installConsoleHook();
 ```
 
-- Backend port default **3001** (`PORT` env to override). Dev panel **5173** proxies `/xhr-events`, `/console-logs`, `/ws` to 3001.
-- ⚠️ If you change ports, sync three places: backend `src/index.ts`, `vite.config.ts`, and the `WS_URL` constant in the hook copy injected into the activity.
-- The hook is guarded by `window.__xhrHooked` and swallows all errors — it never pollutes business XHR.
+- 后端默认端口 **3001**（`PORT` 环境变量可覆盖）。dev 面板 **5173** 代理 `/xhr-events`、`/console-logs`、`/ws` 到 3001
+- ⚠️ 改端口需三处同步：后端 `src/index.ts`、`vite.config.ts`、注入到页面的 hook 副本里的 `WS_URL` 常量
+- hook 有 `window.__xhrHooked` 守卫且吞掉全部异常 —— 绝不污染业务 XHR
+
+更详细的接入说明（含给 AI Agent 的下载文件）见面板内 **Guide** 页。
 
 ## API
 
-| Method | Path              | Description                              |
-|--------|-------------------|------------------------------------------|
-| GET    | `/health`         | Health check                             |
-| POST   | `/xhr-events`     | HTTP ingest (legacy, WS is primary)      |
-| GET    | `/xhr-events`     | History (last 500)                       |
-| DELETE | `/xhr-events`     | Clear XHR events                         |
-| GET    | `/console-logs`   | Console history (last 500)               |
-| DELETE | `/console-logs`   | Clear console logs                       |
-| WS     | `/ws`             | Ingest (`ingest`/`ingest-console`) + push |
+| Method | Path              | 说明                                      |
+|--------|-------------------|-------------------------------------------|
+| GET    | `/health`         | 健康检查                                  |
+| POST   | `/xhr-events`     | HTTP 上报（兼容保留，主通道为 WS）        |
+| GET    | `/xhr-events`     | 历史记录（最近 500 条）                   |
+| DELETE | `/xhr-events`     | 清空 XHR 事件                             |
+| GET    | `/console-logs`   | console 历史（最近 500 条）               |
+| DELETE | `/console-logs`   | 清空 console 日志                         |
+| GET    | `/download/hook`  | 下载 hook 源码（xhrhook.ts，与仓库同步）  |
+| WS     | `/ws`             | 采集（`ingest`/`ingest-console`）+ 推送    |
 
-## Panel features
+## 面板功能
 
-- Live WS stream with exponential-backoff reconnect, history pull, pause/resume, filter, clear
-- XHR list (method / url / status / cost) + detail tabs: Params / Request / Response (collapsible JsonTree)
-- Console page color-coded by level (error / warn / info / log / debug)
-- Copy request as Markdown via context menu
+- WS 实时流：指数退避重连、拉历史、暂停/恢复、过滤、清空
+- XHR 列表（method / url / status / cost）+ 详情页签：Params / Request / Response（可折叠 JsonTree）
+- Console 页按级别着色（error / warn / info / log / debug）
+- 右键菜单一键复制请求为 Markdown
+- 列表与详情分栏可拖拽调整宽度
 
-## Notes
+## 说明
 
-- Buffers are in-memory ring buffers (XHR 5000 / console 1000) — cleared on restart.
-- Bodies over 50KB are truncated with a `[truncated ...]` marker (by design).
-- Reconnect: exponential backoff 1s→10s; offline events queue in a bounded buffer (500) and flush on reconnect.
+- 缓冲为内存环形缓冲（XHR 5000 条 / console 1000 条）—— 重启即清空
+- 请求/响应体超 50KB 截断并加 `[truncated ...]` 标记（设计如此）
+- 重连：指数退避 1s→10s；离线事件进入有界队列（500 条）并在重连后补发
 
-## Tech stack
+## 技术栈
 
 TypeScript · Koa 2 + ws · React 18 (Vite 5) · react-router-dom 7
 
-## Docs for AI agents
+## AI Agent 文档
 
-See `CLAUDE.md` / `AGENTS.md` for architecture details and development conventions.
+架构细节与开发约定见 `CLAUDE.md` / `AGENTS.md`。
